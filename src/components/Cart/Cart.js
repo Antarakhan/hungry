@@ -9,6 +9,8 @@ const Cart = (props)  => {
 
     const cartCtx = useContext(CartContext);
     const [showCheckout, setShowCheckout] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [didSubmit, setDidSubmit] = useState(false);
 
     const totalAmount = `$${cartCtx.totalAmount.toFixed(2)}`;
     const hasItems = cartCtx.items.length;
@@ -24,6 +26,20 @@ const Cart = (props)  => {
 
     const handleOrder = () => {
         setShowCheckout(true);
+    }
+
+    const submitConfirmOrder = async (userData) =>{
+        setIsSubmitting(true);
+        await fetch('https://meals-4fa2b-default-rtdb.firebaseio.com/orders.json', {
+            method: 'POST',
+            body: JSON.stringify({
+                user: userData,
+                orderedItems: cartCtx.items
+            })
+        });
+        setIsSubmitting(false);
+        setDidSubmit(true);
+        cartCtx.clearCart();
     }
 
     const cartItems = <ul className={classes['cart-items']}>
@@ -46,17 +62,35 @@ const Cart = (props)  => {
            Order
        </button>}
     </div>
+
+    const cartModalContent =  
+    <>{cartItems}
+    <div className={classes.total}>
+        <span>Total Amount</span>
+        <span>{totalAmount}</span>
+    </div>
+    {showCheckout && <Checkout onConfirm={submitConfirmOrder}
+    onCancel={props.onClose}/> }
+    {!showCheckout && modalButtons}
+    </>
+
+    const isSubmittingText = <p>Sending order...</p>
+    const didSubmitText = 
+    <>
+    <p>Successfully submit</p>
+    <div className={classes.actions}>
+        <button className={classes['button--alt']} onClick={props.onClose}>
+            Close
+        </button>
+    </div>
+    </>
     
 
     return (
         <Modal onClose={props.onClose}>
-            {cartItems}
-            <div className={classes.total}>
-                <span>Total Amount</span>
-                <span>{totalAmount}</span>
-            </div>
-            {showCheckout && <Checkout onCancel={props.onClose}/> }
-            {!showCheckout && modalButtons}
+            {!isSubmitting && !didSubmit && cartModalContent}
+            {isSubmitting && isSubmittingText}
+            {!isSubmitting && didSubmit && didSubmitText}
         </Modal>
     )
 
